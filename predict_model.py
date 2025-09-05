@@ -12,8 +12,7 @@ app = FastAPI()
 # Define request body format
 class ComplaintRequest(BaseModel):
     complaint: str
-
-# API route for predictions
+    
 @app.post("/predict")
 def predict_department(data: ComplaintRequest):
     # Convert complaint into vector
