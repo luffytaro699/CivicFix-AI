@@ -3,9 +3,8 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import joblib
 
-# Load the trained model and vectorizer
-model = joblib.load("ai/dept_model.pkl")
-vectorizer = joblib.load("ai/vectorizer.pkl")
+model = joblib.load("dept_model.pkl")
+vectorizer = joblib.load("vectorizer.pkl")
 
 # Initialize FastAPI
 app = FastAPI()
