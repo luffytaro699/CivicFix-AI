@@ -15,4 +15,5 @@ EXPOSE 10000
 
 # Command to run the application using Gunicorn + Uvicorn worker
 # Bind to the environment variable $PORT, not hardcoded 8000
-CMD ["sh", "-c", "gunicorn -w 4 -k uvicorn.workers.UvicornWorker ai_services.main:app --bind 0.0.0.0:${PORT}"]
+CMD ["sh", "-c", "uvicorn ai_services.main:app --host 0.0.0.0 --port ${PORT}"]
+
