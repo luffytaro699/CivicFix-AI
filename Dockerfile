@@ -1,20 +1,31 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+# Use official Python slim image (lightweight, flexible)
+FROM python:3.11-slim
 
-# Set the working directory inside the container
+# Set working directory
 WORKDIR /app
 
-# Copy the requirements file and install dependencies
+# Install system dependencies required by OpenCV, Pydub/FFmpeg, Whisper
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    libgl1 \
+    build-essential \
+    wget \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for Docker caching
 COPY requirements.txt .
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy your entire project code into the container
-# This includes ai_services, models, routers, etc.
+# Copy application code
 COPY . .
 
-# Expose the port the app will run on
-EXPOSE 8000
+# Expose port (Render uses $PORT)
+EXPOSE 10000
 
-# Command to run the application using Gunicorn
-# This command tells Gunicorn where to find your FastAPI 'app' object
-CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "ai_services.main:app", "--bind", "0.0.0.0:8000"]
+# Run FastAPI using Uvicorn, using Render's $PORT environment variable
+CMD ["sh", "-c", "uvicorn ai_services.main:app --host 0.0.0.0 --port ${PORT}"]
