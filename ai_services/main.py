@@ -1,5 +1,7 @@
 # ai_services/main.py
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi import FastAPI, Form, HTTPException
+import requests
+from io import BytesIO
 from collections import Counter
 
 # Correct imports
@@ -15,33 +17,51 @@ app = FastAPI()
 def get_confident_departments(predictions_proba, threshold=0.3):
     return [label for label, prob in predictions_proba if prob >= threshold]
 
+def download_file(url):
+    """Download a file from a URL and return bytes."""
+    if not url:
+        return None
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        return BytesIO(response.content)
+    except Exception as e:
+        print(f"Failed to download {url}: {e}")
+        return None
+
 @app.post("/predict_all")
 async def predict_all(
     description: str = Form(...),
-    image: UploadFile = File(...),
-    audio: UploadFile = File(...),
-    video: UploadFile = File(...)
+    image_url: str = Form(None),
+    audio_url: str = Form(None),
+    video_url: str = Form(None)
 ):
-    # Text
+    # 1️⃣ Text prediction
     text_proba = predict_text(description, return_proba=True)
     text_pred = get_confident_departments(text_proba)
 
-    # Image
-    image_bytes = await image.read()
-    image_proba = predict_image_from_bytes(image_bytes, return_proba=True)
-    image_pred = get_confident_departments(image_proba)
+    # 2️⃣ Image prediction
+    image_bytes = download_file(image_url)
+    image_pred = []
+    if image_bytes:
+        image_proba = predict_image_from_bytes(image_bytes, return_proba=True)
+        image_pred = get_confident_departments(image_proba)
 
-    # Audio
-    audio_bytes = await audio.read()
-    audio_proba = predict_audio(audio_bytes, return_proba=True)
-    audio_pred = get_confident_departments(audio_proba)
+    # 3️⃣ Audio prediction
+    audio_bytes = download_file(audio_url)
+    audio_pred = []
+    if audio_bytes:
+        audio_proba = predict_audio(audio_bytes, return_proba=True)
+        audio_pred = get_confident_departments(audio_proba)
 
-    # Video
-    video_bytes = await video.read()
-    video_proba = predict_video(video_bytes, return_proba=True)
-    video_pred = get_confident_departments(video_proba)
+    # 4️⃣ Video prediction
+    video_bytes = download_file(video_url)
+    video_pred = []
+    if video_bytes:
+        video_proba = predict_video(video_bytes, return_proba=True)
+        video_pred = get_confident_departments(video_proba)
 
-    # Aggregate
+    # 5️⃣ Aggregate predictions
     all_preds = text_pred + image_pred + audio_pred + video_pred
     counts = Counter(all_preds)
     final_departments = [dept for dept, cnt in counts.items() if cnt >= MIN_AGREEMENT]
