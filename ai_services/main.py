@@ -1,10 +1,9 @@
 # ai_services/main.py
 from fastapi import FastAPI, Form, HTTPException
 import requests
-from io import BytesIO
 from collections import Counter
 
-# Correct imports
+# Correct imports from your inference helper
 from ai_services.inferencehelper.text_service import predict_text
 from ai_services.inferencehelper.image_service import predict_image_from_bytes
 from ai_services.inferencehelper.audio_service import predict_audio
@@ -15,16 +14,17 @@ MIN_AGREEMENT = 2  # Minimum modalities agreeing
 app = FastAPI()
 
 def get_confident_departments(predictions_proba, threshold=0.3):
+    """Filter predictions above threshold"""
     return [label for label, prob in predictions_proba if prob >= threshold]
 
 def download_file(url):
-    """Download a file from a URL and return bytes."""
+    """Download a file from a URL and return raw bytes"""
     if not url:
         return None
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=15)
         response.raise_for_status()
-        return BytesIO(response.content)
+        return response.content  # return bytes directly
     except Exception as e:
         print(f"Failed to download {url}: {e}")
         return None
@@ -75,14 +75,15 @@ async def predict_all(
             "video_pred": video_pred,
             "final_departments": final_departments
         }
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": "Mismatch between predictions. Please check inputs.",
-                "description_pred": text_pred,
-                "image_pred": image_pred,
-                "audio_pred": audio_pred,
-                "video_pred": video_pred
-            }
-        )
+
+    # If no consensus
+    raise HTTPException(
+        status_code=400,
+        detail={
+            "message": "Mismatch between predictions. Please check inputs.",
+            "description_pred": text_pred,
+            "image_pred": image_pred,
+            "audio_pred": audio_pred,
+            "video_pred": video_pred
+        }
+    )
