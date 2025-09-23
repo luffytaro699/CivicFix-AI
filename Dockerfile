@@ -28,4 +28,6 @@ COPY . .
 EXPOSE 10000
 
 # Run FastAPI using Uvicorn, using Render's $PORT environment variable
+
 CMD ["sh", "-c", "uvicorn ai_services.main:app --host 0.0.0.0 --port ${PORT}"]
+
